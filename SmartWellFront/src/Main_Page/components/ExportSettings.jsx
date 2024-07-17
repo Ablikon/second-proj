@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import './Styles/ExportSettings.css'
+import Select from 'react-select';
+import './Styles/ExportSettings.css';
 
 function ExportSettings() {
   const { id } = useParams();
@@ -27,8 +28,8 @@ function ExportSettings() {
     );
   };
 
-  const handleCurveMapping = (standardCurve, projectCurve) => {
-    setCurveMappings((prev) => ({ ...prev, [standardCurve]: projectCurve }));
+  const handleCurveMapping = (standardCurve, projectCurves) => {
+    setCurveMappings((prev) => ({ ...prev, [standardCurve]: projectCurves }));
   };
 
   const handleExport = () => {
@@ -37,25 +38,38 @@ function ExportSettings() {
     // Здесь будет запрос к беку для создания и скачивания ZIP-архива
   };
 
+  const handleAddNewCurve = () => {
+    setCurves([...curves, `New Curve ${curves.length + 1}`]);
+  };
+
+  const curveOptions = curves.map((curve) => ({
+    value: curve,
+    label: curve,
+  }));
+
   return (
     <div className="export-settings">
       <h2>Export Settings</h2>
       <div className="well-filter">
         <h3>Well Filter</h3>
-        {wells.map((well) => (
-          <label key={well.id}>
-            <input
-              type="checkbox"
-              checked={selectedWells.includes(well.id)}
-              onChange={() => handleWellSelection(well.id)}
-            />
-            {well.name}
-          </label>
-        ))}
-        <button onClick={() => setSelectedWells(wells.map((w) => w.id))}>
-          Choose All
-        </button>
-        <button onClick={() => setSelectedWells([])}>Очистить</button>
+        <div className="well-list">
+          {wells.map((well) => (
+            <label key={well.id} className="well-item">
+              <input
+                type="checkbox"
+                checked={selectedWells.includes(well.id)}
+                onChange={() => handleWellSelection(well.id)}
+              />
+              <span>{well.name}</span>
+            </label>
+          ))}
+        </div>
+        <div className="well-actions">
+          <button onClick={() => setSelectedWells(wells.map((w) => w.id))}>
+            Choose All
+          </button>
+          <button onClick={() => setSelectedWells([])}>Clear</button>
+        </div>
       </div>
       <div className="curve-mappings">
         <h3>Curve Settings</h3>
@@ -69,24 +83,30 @@ function ExportSettings() {
           <tbody>
             {curves.map((curve) => (
               <tr key={curve}>
-                <td>{curve}</td>
                 <td>
-                  <select
-                    value={curveMappings[curve] || ''}
-                    onChange={(e) => handleCurveMapping(curve, e.target.value)}
-                  >
-                    <option value="">Choose Curve</option>
-                    {curves.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    value={curve}
+                    onChange={(e) => {
+                      const newCurves = [...curves];
+                      newCurves[newCurves.indexOf(curve)] = e.target.value;
+                      setCurves(newCurves);
+                    }}
+                  />
+                </td>
+                <td>
+                  <Select
+                    isMulti
+                    value={curveMappings[curve] || []}
+                    options={curveOptions}
+                    onChange={(selectedOptions) => handleCurveMapping(curve, selectedOptions)}
+                  />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        <button onClick={handleAddNewCurve} className="btn btn-secondary">New</button>
       </div>
       <button onClick={handleExport} className="btn btn-primary">
         Export
